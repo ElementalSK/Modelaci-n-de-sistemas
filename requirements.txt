@@ -1,2 +1,10 @@
 streamlit
-streamlit-option-menu
+pandas
+numpy
+matplotlib.pyplot
+seaborn
+os
+warnings
+
+plotly.express
+math
