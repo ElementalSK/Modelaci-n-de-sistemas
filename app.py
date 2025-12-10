@@ -1,4 +1,57 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+
+# Columnas clave que usa el modelo
+COL_REPROBADAS = "Indica la cantidad de asignaturas reprobadas desde su inicio de la carrera hasta la fecha. Si no has reprobado, marca 0"
+COL_MOTIVACION = "Indica tu nivel actual de motivación por estudiar tu carrera"
+
+def calcular_alertas(df_raw: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aplica el sistema de alerta académica a un DataFrame que
+    tenga al menos las columnas:
+    - COL_REPROBADAS
+    - COL_MOTIVACION
+
+    Devuelve una copia del DataFrame con dos columnas nuevas:
+    - reprob_predicha
+    - nivel_alerta
+    """
+    df = df_raw.copy()
+
+    # Verificar que estén las columnas necesarias
+    missing = [c for c in (COL_REPROBADAS, COL_MOTIVACION) if c not in df.columns]
+    if missing:
+        raise ValueError(
+            "No se encontraron las columnas necesarias en el dataset. "
+            f"Faltan: {missing}"
+        )
+
+    # 1. Puntuación de riesgo (tu fórmula)
+    df["reprob_predicha"] = (
+        df[COL_REPROBADAS] * 1.5
+        - df[COL_MOTIVACION] * 0.5
+    )
+
+    # 2. Ajustar valores negativos a 0
+    df["reprob_predicha"] = df["reprob_predicha"].clip(lower=0)
+
+    # 3. Percentiles para clasificar
+    p_bajo = np.percentile(df["reprob_predicha"], 70)
+    p_medio = np.percentile(df["reprob_predicha"], 85)
+
+    # 4. Función para nivel de alerta
+    def nivel_alerta(x):
+        if x <= p_bajo:
+            return "🟢 Bajo riesgo"
+        elif x <= p_medio:
+            return "🟡 Riesgo medio"
+        else:
+            return "🔴 Alto riesgo"
+
+    df["nivel_alerta"] = df["reprob_predicha"].apply(nivel_alerta)
+
+    return df
 
 
 # Configuración de la página
@@ -139,8 +192,9 @@ pagina = st.sidebar.radio(
         "Usuario y Cliente",
         "Nuestra solución",
         "Cómo funciona el modelo",
+        "Sistema en acción",
         "Nuestro enfoque",
-        "¿Quienes somos?"
+        "¿Quiénes somos?"
     ],
 )
 
@@ -152,13 +206,12 @@ if pagina == "Inicio":
 
     st.markdown(
         """
-        Este proyecto surge desde la preocupación por la **detección tardía** del riesgo académico
-        en estudiantes universitarios.  
+        Este proyecto surge desde la preocupación por la detección tardía del riesgo académico en estudiantes universitarios.
         
         Nuestro objetivo es:
 
         - Identificar tempranamente a estudiantes con **mayor probabilidad de presentar dificultades académicas**.  
-        - Entregar información clara y accionable a **tutores, psicólogos** y en general **encargados del bienestar estudiantil**.  
+        - Entregar información clara y accionable a **tutores, psicólogos** y, en general, a los **profesionales encargados del bienestar estudiantil**. 
         - Favorecer **intervenciones preventivas**, antes de llegar a la deserción o a un deterioro severo del bienestar.
 
         Esta página está pensada como un **resumen explicativo del proyecto**,
@@ -176,11 +229,11 @@ elif pagina == "Usuario y Cliente":
         st.markdown(
             """
 
-            Los potenciales usuarios del sistema son aquellos profesionales encargados de acompañar y apoyar a los estudiantes dentro de la DISE, ya que, ellos son quienes
-            interactuan directamente con situaciones de riesgo académico, socioemocinal o de bienestar. Entre ellos se consideran:
+            Los potenciales usuarios del sistema son los profesionales encargados de acompañar y apoyar a los estudiantes dentro de la DISE, ya que son quienes
+            interactúan directamente con situaciones de riesgo académico, socioemocinal o de bienestar. Entre ellos se consideran:
 
             - **Psicólogos/as DISE**  
-              - Utilizarian las alertas para identificar que estudiantes presentan indicadores tempranos de desmotivacion, estrés académico o riesgo emocional. 
+              - Utilizarían las alertas para identificar a estudiantes presentan indicadores tempranos de desmotivación, estrés académico o riesgo emocional. 
 
             - **Trabajadores/as sociales**  
               - Emplean las alertas para detectar casos asociados a dificultades socioeconómicas, acceso a beneficios y 
@@ -226,7 +279,7 @@ elif pagina == "Nuestra solución":
             """
             En el contexto actual, tenemos las siguientes problemáticas:
 
-            - Muchos estudiantes enfrentan problemas de rendimiento, desmotivacion o abandono académico, esto tiene 
+            - Muchos estudiantes enfrentan problemas de rendimiento, desmotivación o abandono académico, esto tiene 
             consecuencias negativas tanto para ellos como para la institución e incluso para el mercado laboral nacional.
         
             - Faltan herramientas efectivas para **identificar tempranamente** a los estudiantes en riesgo y alerten a las instituaciones antes de que los problemas se agraven.
@@ -358,7 +411,7 @@ elif pagina == "Nuestra solución":
         st.markdown(
             """
         - **Cantidad de asignaturas reprobadas**  
-          - Es uno de los indicadores más claros para visualizar de que manera se esta desempeñando academicamente un estudiante.  
+          - Es uno de los indicadores más claros para visualizar de qué manera se está desempeñando académicamente un estudiante.  
             """)
     with col2:
         st.image(
@@ -391,11 +444,11 @@ elif pagina == "Cómo funciona el modelo":
     st.header("¿En qué consiste nuestro modelo?")             
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("En esta sección, explicaremos de que manera funciona tecnicamente la logica con la que opera nuestro sistema de alerta academica temprana.")
+    st.markdown("En esta sección, explicaremos de que manera funciona técnicamente la lógica con la que opera nuestro sistema de alerta académica temprana.")
     st.markdown(""" 
                 
     El código funciona basandose en el modelo de una **tubería de datos (Pipeline ETL)**, que consta de tres grandes etapas: Extracción de datos, 
-                Transformacion y Carga en un reporte unificado. A continuación, se detalla cada una de estas etapas:
+                Transformación y Carga en un reporte unificado. A continuación, se detalla cada una de estas etapas:
 
     """)
 
@@ -404,7 +457,7 @@ elif pagina == "Cómo funciona el modelo":
         """
 
         ### 1. Extracción de datos 
-        El codigo procesa datos especificamente recopilados, aplicando filtros tal como:
+        El código procesa datos específicamente recopilados, aplicando filtros tal como:
 
         - **Filtro de Carreras**
              - El script contiene un "diccionario" con solamente 6 carreras seleccionadas que se consideran en el análisis. Estas son: Ingeniería Civil Industrial,
@@ -546,26 +599,219 @@ elif pagina == "Cómo funciona el modelo":
     st.image(
         "Diagrama.jpeg",caption="Diagrama de flujo del sistema de alerta académica temprana", width=700)
 
+elif pagina == "Sistema en acción":
+    st.header("Sistema de Alerta Académica – En acción")
+    st.markdown(
+        """
+        En esta sección puedes ver **cómo funciona el sistema sobre datos reales**.
+
+        El modelo utiliza:
+        - La cantidad de asignaturas reprobadas acumuladas.
+        - El nivel actual de motivación por estudiar la carrera.
+
+        A partir de eso, calcula un **puntaje de riesgo** y lo transforma en un
+        nivel de alerta:
+
+        - 🟢 Bajo riesgo  
+        - 🟡 Riesgo medio  
+        - 🔴 Alto riesgo  
+        """
+    )
+
+    st.markdown("---")
+
+    # Opción de fuente de datos
+    opcion_fuente = st.radio(
+        "Selecciona los datos a utilizar:",
+        ["Usar datos del proyecto", "Subir un archivo propio (.csv)"]
+    )
+
+    df_resultado = None
+    error_msg = None
+
+    # 1) Usar el CSV del proyecto
+    if opcion_fuente == "Usar datos del proyecto":
+        try:
+            df_base = pd.read_csv("Cuestionario motivacion academica.csv")
+            df_resultado = calcular_alertas(df_base)
+        except FileNotFoundError:
+            error_msg = (
+                "No se encontró el archivo **'Cuestionario motivacion academica.csv'** "
+                "en el mismo directorio que `app.py`."
+            )
+        except Exception as e:
+            error_msg = f"Ocurrió un error al procesar los datos del proyecto: {e}"
+
+    # 2) Subir un archivo propio
+    else:
+        archivo = st.file_uploader(
+            "Sube un archivo .csv con el mismo formato de la encuesta de motivación:",
+            type="csv"
+        )
+        if archivo is not None:
+            try:
+                df_base = pd.read_csv(archivo)
+                df_resultado = calcular_alertas(df_base)
+            except Exception as e:
+                error_msg = (
+                    "No se pudo procesar el archivo subido. "
+                    "Revisa que tenga las columnas necesarias:\n\n"
+                    f"- {COL_REPROBADAS}\n"
+                    f"- {COL_MOTIVACION}\n\n"
+                    f"Detalle técnico: {e}"
+                )
+
+    # Mostrar errores si los hay
+    if error_msg:
+        st.error(error_msg)
+
+    # Si tenemos resultado, lo mostramos
+    if df_resultado is not None:
+        st.markdown("### Resumen de niveles de alerta")
+
+    # --- 1) MÉTRICOS GLOBALES (sin filtrar) ---
+    conteo_global = df_resultado["nivel_alerta"].value_counts()
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("🟢 Bajo riesgo", int(conteo_global.get("🟢 Bajo riesgo", 0)))
+    col2.metric("🟡 Riesgo medio", int(conteo_global.get("🟡 Riesgo medio", 0)))
+    col3.metric("🔴 Alto riesgo", int(conteo_global.get("🔴 Alto riesgo", 0)))
+
+    st.markdown("---")
+
+    # --- 2) FILTRO POR NIVEL DE ALERTA ---
+    st.markdown("### Distribución de niveles de alerta (según filtro)")
+
+    niveles_disponibles = [
+        "🟢 Bajo riesgo",
+        "🟡 Riesgo medio",
+        "🔴 Alto riesgo",
+    ]
+
+    niveles_seleccionados = st.multiselect(
+        "Filtrar por nivel de alerta:",
+        options=niveles_disponibles,
+        default=niveles_disponibles,   # por defecto, todos
+    )
+
+    # Si no se selecciona nada, mostramos aviso y no seguimos
+    if not niveles_seleccionados:
+        st.warning("Selecciona al menos un nivel de alerta para visualizar los datos.")
+    else:
+        # DataFrame filtrado
+        df_filtrado = df_resultado[df_resultado["nivel_alerta"].isin(niveles_seleccionados)]
+
+    # --- 3) GRÁFICO DE BARRAS DINÁMICO ---
+        conteo_filtrado = df_filtrado["nivel_alerta"].value_counts()
+
+        dist_df = conteo_filtrado.rename_axis("nivel_alerta").reset_index(name="cantidad")
+
+        orden_niveles = ["🟢 Bajo riesgo", "🟡 Riesgo medio", "🔴 Alto riesgo"]
+        dist_df["nivel_alerta"] = pd.Categorical(
+            dist_df["nivel_alerta"],
+            categories=orden_niveles,
+            ordered=True,
+        )
+        dist_df = dist_df.sort_values("nivel_alerta")
+
+        import matplotlib.pyplot as plt
+
+        # Copiamos dist_df para no tocar el original
+        dist_plot = dist_df.copy()
+
+        # Diccionario de colores: las claves deben coincidir EXACTO con nivel_alerta
+        colors_map = {
+            "🟢 Bajo riesgo": "#2ecc71",   # verde
+            "🟡 Riesgo medio": "#f1c40f",  # amarillo
+            "🔴 Alto riesgo": "#e74c3c",   # rojo
+        }
+
+        # Construimos:
+        # - labels: texto limpio SIN emoji para el eje X
+        # - values: las cantidades
+        # - bar_colors: lista de colores garantizados (sin NaN)
+        labels = []
+        values = []
+        bar_colors = []
+
+        for nivel, cant in zip(dist_plot["nivel_alerta"], dist_plot["cantidad"]):
+            # limpiar emoji para la etiqueta
+            etiqueta = (
+                str(nivel)
+                .replace("🟢 ", "")
+                .replace("🟡 ", "")
+                .replace("🔴 ", "")
+            )
+            labels.append(etiqueta)
+            values.append(cant)
+
+    # color según nivel, con azul por defecto si algo no calza
+            bar_colors.append(colors_map.get(nivel, "#1f77b4"))
+
+        # Graficar
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+        ax.bar(labels, values, color=bar_colors)
+
+        ax.set_ylabel("Cantidad")
+        ax.set_xlabel("Nivel de alerta")
+        plt.xticks(rotation=0)
+
+        st.pyplot(fig)
+
+
+        st.markdown("---")
+        st.markdown("### Tabla de resultados por estudiante")
+
+        st.info(
+            "Cada fila corresponde a un estudiante. "
+            "La tabla y el gráfico muestran **solo los niveles de alerta seleccionados en el filtro**."
+        )
+
+    # Columnas relevantes
+    columnas_mostrar = [
+        COL_REPROBADAS,
+        COL_MOTIVACION,
+        "reprob_predicha",
+        "nivel_alerta",
+    ]
+    columnas_mostrar = [c for c in columnas_mostrar if c in df_filtrado.columns]
+
+    # Tabla dentro de expander
+    with st.expander("Ver tabla filtrada de estudiantes"):
+        st.dataframe(df_filtrado[columnas_mostrar])
+
+    # --- 4) Botón para descargar (también según filtro) ---
+    csv_bytes = df_filtrado.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+    st.download_button(
+        "⬇️ Descargar resultados filtrados en CSV",
+        data=csv_bytes,
+        file_name="resultados_alerta_academica_filtrado.csv",
+        mime="text/csv",
+    )
+
+
+
 
 elif pagina == "Nuestro enfoque":
     st.header("¿Por qué lo resolvimos de esta forma?")
     st.markdown(
         """
-        Nuestro enfoque se basa en nuestro deseo de crear un sistema responsable, util y escalable a lo largo del tiempo.
+        Nuestro enfoque se basa en nuestro deseo de crear un sistema responsable, útil y escalable a lo largo del tiempo.
 
-        Para esto, nos guiamos en 4 principios clave:
+        Para esto, nos guiamos por 4 principios clave:
 
         - **1. Privacidad**  
-          - Se ocultan datos sensibles y evita entregar informacion a actores no pertinentes, como podria ser profesores o administrativos que no esten relacionados con el bienestar estudiantil.
+          - Se ocultan datos sensibles y se evita entregar información a actores no pertinentes, como podria ser profesores o administrativos que no estén relacionados con el bienestar estudiantil.
         
         - **2. Proporcionalidad**  
-            - Utilizamos unicamente variables necesarias para generar alertas significativas, evitando recopilar datos excesivos que puedan invadir la privacidad de los estudiantes o
+            - Utilizamos únicamente variables necesarias para generar alertas significativas, evitando recopilar datos excesivos que puedan invadir la privacidad de los estudiantes o
           generar una mala medicion por un exceso de datos no relevantes.  
        
         - **3. Simplicidad**  
-          - La interfaz es lineal, facil de interpretar y no requiere capacitacion especializada para su uso. Lo que facilita su adopcion por parte de los potenciales usuarios.
+          - La interfaz es lineal, fácil de interpretar y no requiere capacitación especializada para su uso. Lo que facilita su adopción por parte de los potenciales usuarios.
 
-        - **4. Escabilidad**  
+        - **4. Escalabilidad**  
           - El modelo permite integrar nuevas cohortes, reajustar reglas del sistema e incluso conectar futuras herramientas de IA sin rediseñar desde cero.
 
         En resumen, nuestro objetivo es crear una herramienta práctica y efectiva que apoye a las instituciones educativas en su misión de acompañar a los estudiantes hacia el éxito académico.
@@ -574,7 +820,7 @@ elif pagina == "Nuestro enfoque":
 
    
 
-elif pagina == "¿Quienes somos?":
+elif pagina == "¿Quiénes somos?":
     st.header("Equipo de trabajo")
 
     st.markdown(
