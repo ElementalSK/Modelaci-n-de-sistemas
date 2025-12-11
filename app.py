@@ -528,7 +528,7 @@ elif pagina == "Cómo funciona el modelo":
         """
         ### 3. ¿Cómo se compara las bases de datos? (El Cruce de datos)
 
-        Esta parte corresponde a la más "inteligente" del script, deonde resolvemos la problematica de la falta de un ID común entre las bases de datos.
+        Esta parte corresponde a la más "inteligente" del script, donde resolvemos la problematica de la falta de un ID común entre las bases de datos.
 
         ### **A. Traducción (El Mapeo)**
 
@@ -859,4 +859,5 @@ elif pagina == "¿Quiénes somos?":
 
     st.markdown("---")
     
+
 
