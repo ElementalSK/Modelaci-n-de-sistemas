@@ -601,6 +601,22 @@ elif pagina == "Cómo funciona el modelo":
 
 elif pagina == "Sistema en acción":
     st.header("Sistema de Alerta Académica – En acción")
+
+    st.markdown("""
+        <style>
+        /* Cambiar color del número en st.metric() */
+        [data-testid="stMetricValue"] {
+            color: black !important;
+        }
+
+        /* Cambiar color del label (opcional) */
+        [data-testid="stMetricLabel"] {
+            color: black !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+    
     st.markdown(
         """
         En esta sección puedes ver **cómo funciona el sistema sobre datos reales**.
@@ -843,3 +859,4 @@ elif pagina == "¿Quiénes somos?":
 
     st.markdown("---")
     
+
